@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using Fluid;
+using Fluid.Values;
 using HtmlAgilityPack;
 using Kinetq.LiquidSimpleServer.Exceptions;
 using Kinetq.LiquidSimpleServer.Interfaces;
@@ -170,6 +171,63 @@ public class HtmlRendererTests : IAsyncLifetime
         await Assert.ThrowsAsync<HtmlSyntaxException>(async () => await _htmlRenderer.RenderHtml(renderModel, liquidRoute));
     }
 
+    [Fact]
+    private async Task Returns_Posts_From_Registered_Filter()
+    {
+        var liquidRoute = new LiquidRoute()
+        {
+            FileProvider = _phyicalFileProvider,
+            RoutePattern = new Regex("^/$"),
+            LiquidTemplatePath = "index.liquid"
+        };
+
+        var renderModel = new RenderModel()
+        {
+            Route = "/",
+            QueryParams = new Dictionary<string, string>(),
+            ViewModel = new RenderViewModel()
+            {
+                Page = new Page()
+                {
+                    Heading = "Test Heading"
+                }
+            }
+        };
+
+        _liquidFilterManagerMock.Setup(x => x.LiquidFilters)
+            .Returns(new Dictionary<string, FilterDelegate>()
+            {
+                {
+                    "get_posts", (input, arguments, context) =>
+                    {
+                        var posts = new List<Post>()
+                        {
+                            new Post()
+                            {
+                                Title = "First Post",
+                                Url = "/posts/first-post",
+                                Date = new DateTime(2024, 1, 1)
+                            },
+                            new Post()
+                            {
+                                Title = "Second Post",
+                                Url = "/posts/second-post",
+                                Date = new DateTime(2024, 1, 1)
+                            },
+                        };
+                        return FluidValue.Create(posts, context.Options);
+                    }
+                }
+            });
+
+        string html = await _htmlRenderer.RenderHtml(renderModel, liquidRoute);
+        HtmlDocument htmlDoc = new HtmlDocument();
+        htmlDoc.LoadHtml(html);
+
+        var posts = htmlDoc.DocumentNode.SelectNodes("//*[contains(@class, 'post')]");
+        Assert.Equal(2, posts.Count);
+    }
+
     public Task DisposeAsync()
     {
         return Task.CompletedTask;
@@ -184,4 +242,11 @@ public class RenderViewModel
 public class Page
 {
     public string Heading { get; set; }
+}
+
+public class Post
+{
+    public string Title { get; set; }
+    public string Url { get; set; }
+    public DateTime Date { get; set; }
 }
