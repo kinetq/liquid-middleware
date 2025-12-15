@@ -1,5 +1,7 @@
 ﻿using Fluid;
 using HtmlAgilityPack;
+using Kinetq.LiquidSimpleServer.Exceptions;
+using Kinetq.LiquidSimpleServer.Helpers;
 using Kinetq.LiquidSimpleServer.Interfaces;
 using Kinetq.LiquidSimpleServer.Models;
 
@@ -26,12 +28,13 @@ public class HtmlRenderer : IHtmlRenderer
         }
 
         var fileInfo = liquidRoute.FileProvider.GetFileInfo(liquidRoute.LiquidTemplatePath);
-        if (fileInfo.PhysicalPath == null)
+        if (!fileInfo.Exists)
         {
             return null;
         }
 
-        string liquidTemplate = await File.ReadAllTextAsync(fileInfo.PhysicalPath);
+        string liquidTemplate = await fileInfo.GetFileContents();
+
         var parser = _fluidParserManager.FluidParser;
         if (parser.TryParse(liquidTemplate, out IFluidTemplate fluidTemplate, out string error))
         {
@@ -64,13 +67,12 @@ public class HtmlRenderer : IHtmlRenderer
 
             if (htmlDoc.ParseErrors != null && htmlDoc.ParseErrors.Any())
             {
-                string errors = string.Join("; ", htmlDoc.ParseErrors.Select(e => e.Reason));
-                return errors;
+                throw new HtmlSyntaxException(htmlDoc.ParseErrors);
             }
 
             return html;
         }
 
-        return error;
+        throw new LiquidSyntaxException(error);
     }
 }

@@ -172,12 +172,12 @@ public class LiquidSimpleServer : ILiquidSimpleServer
             Uri refererUri = new Uri(referer);
 
             LiquidRoute? referrerLiquidRoute = _liquidRoutesManager.GetRouteForPath(refererUri.AbsolutePath);
-            var localPath = referrerLiquidRoute?.FileProvider.GetFileInfo(path);
-            if (localPath != null && File.Exists(localPath.PhysicalPath))
+            var fileInfo = referrerLiquidRoute?.FileProvider.GetFileInfo(path);
+            if (fileInfo is { Exists: true })
             {
-                var fileContent = await File.ReadAllBytesAsync(localPath.PhysicalPath);
-                var contentType = GetContentType(Path.GetExtension(localPath.PhysicalPath));
-                return (fileContent, contentType, 200);
+                var fileContent = await fileInfo.GetFileContents();
+                var contentType = await fileInfo.GetFileContentType();
+                return (Encoding.UTF8.GetBytes(fileContent), contentType, 200);
             }
         }
         catch
@@ -193,25 +193,6 @@ public class LiquidSimpleServer : ILiquidSimpleServer
         }
 
         return ("<h1>404 - Page Not Found</h1>"u8.ToArray(), "text/html", 404);
-    }
-
-    private static string GetContentType(string extension)
-    {
-        return extension.ToLowerInvariant() switch
-        {
-            ".html" or ".htm" => "text/html",
-            ".css" => "text/css",
-            ".js" => "application/javascript",
-            ".json" => "application/json",
-            ".png" => "image/png",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".gif" => "image/gif",
-            ".svg" => "image/svg+xml",
-            ".ico" => "image/x-icon",
-            ".txt" => "text/plain",
-            ".xml" => "application/xml",
-            _ => "application/octet-stream"
-        };
     }
 
     public void Dispose()
