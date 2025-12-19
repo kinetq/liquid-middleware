@@ -2,35 +2,38 @@
 using Kinetq.LiquidSimpleServer.Interfaces;
 using Kinetq.LiquidSimpleServer.Models;
 using Microsoft.Extensions.Logging;
-using System.IO;
 using System.Net;
 using System.Text;
+using Microsoft.Extensions.Options;
 
 namespace Kinetq.LiquidSimpleServer;
 
 public class LiquidSimpleServer : ILiquidSimpleServer
 {
     private readonly HttpListener _listener;
-    private readonly int _port;
     private bool _isRunning;
     private readonly CancellationTokenSource _cancellationTokenSource;
 
     private readonly ILiquidRoutesManager _liquidRoutesManager;
     private readonly ILogger<LiquidSimpleServer> _logger;
     private readonly IHtmlRenderer _htmlRenderer;
+    private readonly LiquidSimpleServerOptions _options;
 
     public LiquidSimpleServer(
         ILiquidRoutesManager liquidRoutesManager,
         ILogger<LiquidSimpleServer> logger,
-        IHtmlRenderer htmlRenderer)
+        IHtmlRenderer htmlRenderer,
+        IOptions<LiquidSimpleServerOptions> options)
     {
         _liquidRoutesManager = liquidRoutesManager;
         _logger = logger;
         _htmlRenderer = htmlRenderer;
+        _options = options.Value;
 
-        _port = HttpHelpers.GetRandomUnusedPort();
+        _options.Port ??= HttpHelpers.GetRandomUnusedPort();
+
         _listener = new HttpListener();
-        _listener.Prefixes.Add($"http://localhost:{_port}/");
+        _listener.Prefixes.Add($"http://localhost:{_options.Port}/");
 
         _cancellationTokenSource = new CancellationTokenSource();
     }
@@ -44,8 +47,6 @@ public class LiquidSimpleServer : ILiquidSimpleServer
 
         _listener.Start();
         _isRunning = true;
-
-        _logger.LogInformation($"Liquid web server started on http://localhost:{_port}");
 
         await Task.Run(() => HandleRequestsAsync(_cancellationTokenSource.Token));
     }
