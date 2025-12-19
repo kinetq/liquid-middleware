@@ -8,7 +8,9 @@ namespace Kinetq.LiquidSimpleServer.Helpers;
 
 public static class ServiceCollectionHelpers
 {
-    public static IServiceCollection AddLiquidSimpleServer(this IServiceCollection serviceCollection, IConfiguration configuration)
+    public static IServiceCollection AddLiquidSimpleServer(
+        this IServiceCollection serviceCollection, 
+        IConfiguration? configuration = null)
     {
         serviceCollection.AddSingleton<ILiquidSimpleServer, LiquidSimpleServer>();
         serviceCollection.AddSingleton<ILiquidFilterManager, LiquidFilterManager>();
@@ -17,8 +19,14 @@ public static class ServiceCollectionHelpers
         serviceCollection.AddSingleton<IFluidParserManager, FluidParserManager>();
         serviceCollection.AddScoped<IHtmlRenderer, HtmlRenderer>();
 
-        serviceCollection.Configure<LiquidSimpleServerOptions>(configuration.GetSection("LiquidSimpleServer").Bind);
-
+        if (configuration != null)
+        {
+            serviceCollection.Configure<LiquidSimpleServerOptions>(configuration.GetSection("LiquidSimpleServer").Bind);
+        }
+        else
+        {
+            serviceCollection.Configure<LiquidSimpleServerOptions>(options => new LiquidSimpleServerOptions());
+        }
 
         return serviceCollection;
     }
