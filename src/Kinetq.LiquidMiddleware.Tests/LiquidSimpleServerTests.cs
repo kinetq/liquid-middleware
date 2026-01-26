@@ -116,6 +116,7 @@ namespace Kinetq.LiquidMiddleware.Tests
         [InlineData("/assets/image.svg")]
         [InlineData("/assets/image.png")]
         [InlineData("/assets/image.jpeg")]
+        [InlineData("/scripts/site.js.map")]
         public async Task GetHomePageAsync_ShouldReturnAssetFile_WhenRouteExists(string assetPath)
         {
             // Arrange

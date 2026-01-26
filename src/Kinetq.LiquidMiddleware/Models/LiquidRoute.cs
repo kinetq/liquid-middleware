@@ -5,9 +5,9 @@ namespace Kinetq.LiquidMiddleware.Models;
 
 public partial class LiquidRoute
 {
-    public virtual Regex RoutePattern { get; set; }
-    public virtual string LiquidTemplatePath { get; set; }
-    public virtual IFileProvider FileProvider { get; set; }
-    public virtual Func<LiquidRequestModel, Task<object>> Execute { get; set; }
-    public virtual IDictionary<string, string> QueryParams { get; set; } = new Dictionary<string, string>();
+    public Regex RoutePattern { get; set; }
+    public string LiquidTemplatePath { get; set; }
+    public IFileProvider FileProvider { get; set; }
+    public Func<LiquidRequestModel, Task<object>> Execute { get; set; }
+    public IDictionary<string, string> QueryParams { get; set; } = new Dictionary<string, string>();
 }

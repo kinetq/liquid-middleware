@@ -25,7 +25,7 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
 
     public async Task<(byte[] content, string contentType, int statusCode)> HandleRequestAsync(LiquidRequestModel request)
     {
-        var renderModel = new RenderModel()
+        var renderModel = new RenderModel
         {
             Route = request.Route,
             QueryParams = request.QueryParams

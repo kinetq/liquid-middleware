@@ -77,6 +77,9 @@ public static class FileProviderHelpers
             ".ico" => "image/x-icon",
             ".txt" => "text/plain",
             ".xml" => "application/xml",
+            ".pdf" => "application/pdf",
+            ".html" or ".htm" => "text/html",
+            ".map" => "application/json",
             _ => null
         };
     }

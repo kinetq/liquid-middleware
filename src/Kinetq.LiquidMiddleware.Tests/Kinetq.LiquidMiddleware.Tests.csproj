@@ -13,6 +13,7 @@
     <None Remove="Templates\assets\data.json" />
     <None Remove="Templates\index.liquid" />
     <None Remove="Templates\scripts\site.js" />
+    <None Remove="Templates\scripts\site.js.map" />
     <None Remove="Templates\styles\styles.css" />
   </ItemGroup>
 
@@ -45,6 +46,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="Templates\scripts\site.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Templates\scripts\site.js.map">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="Templates\styles\styles.css">
