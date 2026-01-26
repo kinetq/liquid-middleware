@@ -1,7 +1,9 @@
 ﻿using System.Net;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Kinetq.LiquidMiddleware.Interfaces;
 using Kinetq.LiquidMiddleware.Models;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 
 namespace Kinetq.LiquidMiddleware.Managers;
@@ -76,5 +78,19 @@ public class LiquidRoutesManager : ILiquidRoutesManager
         }
 
         return liquidRoute;
+    }
+
+    public IFileProvider? GetFileProviderForAsset(string filePath)
+    {
+        foreach(var liquidRoute in LiquidRoutes)
+        {
+            var fileInfo = liquidRoute.FileProvider.GetFileInfo(filePath);
+            if (fileInfo.Exists)
+            {
+                return liquidRoute.FileProvider;
+            }
+        }
+
+        return null;
     }
 }

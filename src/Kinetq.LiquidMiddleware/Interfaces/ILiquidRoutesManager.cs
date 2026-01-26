@@ -1,5 +1,6 @@
-﻿using System.Net;
-using Kinetq.LiquidMiddleware.Models;
+﻿using Kinetq.LiquidMiddleware.Models;
+using Microsoft.Extensions.FileProviders;
+using System.Net;
 
 namespace Kinetq.LiquidMiddleware.Interfaces;
 
@@ -11,4 +12,5 @@ public interface ILiquidRoutesManager
     IDictionary<int, LiquidRoute> ErrorRoutes { get; }
     LiquidRoute? GetRouteForPath(string path, IDictionary<string, string>? queryParams = null);
     LiquidRoute? GetRouteForStatusCode(HttpStatusCode statusCode);
+    IFileProvider? GetFileProviderForAsset(string filePath);
 }

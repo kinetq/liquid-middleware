@@ -3,6 +3,7 @@ using System.Text;
 using Kinetq.LiquidMiddleware.Helpers;
 using Kinetq.LiquidMiddleware.Interfaces;
 using Kinetq.LiquidMiddleware.Models;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 
 namespace Kinetq.LiquidMiddleware;
@@ -14,8 +15,8 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
     private readonly ILogger<LiquidResponseMiddleware> _logger;
 
     public LiquidResponseMiddleware(
-        ILiquidRoutesManager liquidRoutesManager, 
-        IHtmlRenderer htmlRenderer, 
+        ILiquidRoutesManager liquidRoutesManager,
+        IHtmlRenderer htmlRenderer,
         ILogger<LiquidResponseMiddleware> logger)
     {
         _liquidRoutesManager = liquidRoutesManager;
@@ -68,10 +69,19 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
             try
             {
                 string referer = request.Headers["Referer"];
-                Uri refererUri = new Uri(referer);
+                IFileProvider? assetFileProvider;
+                if (!string.IsNullOrEmpty(referer))
+                {
+                    Uri refererUri = new Uri(referer);
+                    LiquidRoute? referrerLiquidRoute = _liquidRoutesManager.GetRouteForPath(refererUri.AbsolutePath);
+                    assetFileProvider = referrerLiquidRoute?.FileProvider;
+                }
+                else
+                {
+                    assetFileProvider = _liquidRoutesManager.GetFileProviderForAsset(request.Route);
+                }
 
-                LiquidRoute? referrerLiquidRoute = _liquidRoutesManager.GetRouteForPath(refererUri.AbsolutePath);
-                var fileInfo = referrerLiquidRoute?.FileProvider.GetFileInfo(request.Route);
+                var fileInfo = assetFileProvider?.GetFileInfo(request.Route);
                 if (fileInfo is { Exists: true })
                 {
                     var fileContent = await fileInfo.GetFileContentsBytes();
