@@ -1,0 +1,289 @@
+﻿using Kinetq.LiquidMiddleware.Interfaces;
+using Kinetq.LiquidMiddleware.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Moq;
+using FluentAssertions;
+using Fluid;
+using Fluid.Values;
+
+namespace Kinetq.LiquidMiddleware.Tests;
+
+public class LiquidStartupTests
+{
+    private readonly ILiquidStartup _liquidStartup;
+    private readonly Mock<ILiquidRoutesManager> _liquidRoutesManagerMock;
+    private readonly Mock<ILiquidFilterManager> _liquidFilterManagerMock;
+    private readonly Mock<IEnumerable<ILiquidRoute>> _liquidRoutesMock;
+    private readonly Mock<IEnumerable<ILiquidFilter>> _liquidFiltersMock;
+    private readonly ServiceProvider _serviceProvider;
+
+    public LiquidStartupTests()
+    {
+        _liquidRoutesManagerMock = new Mock<ILiquidRoutesManager>();
+        _liquidFilterManagerMock = new Mock<ILiquidFilterManager>();
+        _liquidRoutesMock = new Mock<IEnumerable<ILiquidRoute>>();
+        _liquidFiltersMock = new Mock<IEnumerable<ILiquidFilter>>();
+
+        var serviceCollection = new ServiceCollection();
+        _serviceProvider = serviceCollection
+            .AddSingleton(_liquidRoutesManagerMock.Object)
+            .AddSingleton(_liquidFilterManagerMock.Object)
+            .AddSingleton(_liquidRoutesMock.Object)
+            .AddSingleton(_liquidFiltersMock.Object)
+            .AddScoped<ILiquidStartup, LiquidStartup>()
+            .AddLogging(builder => builder.AddConsole())
+            .BuildServiceProvider();
+
+        _liquidStartup = _serviceProvider.GetRequiredService<ILiquidStartup>();
+    }
+
+    [Fact]
+    public async Task RegisterRoutes_ShouldCallGetRouteOnEachLiquidRoute()
+    {
+        // Arrange
+        var mockRoute1 = new Mock<ILiquidRoute>();
+        var mockRoute2 = new Mock<ILiquidRoute>();
+        var mockRoute3 = new Mock<ILiquidRoute>();
+
+        var liquidRoute1 = CreateTestLiquidRoute("^/test1$", "test1.liquid");
+        var liquidRoute2 = CreateTestLiquidRoute("^/test2$", "test2.liquid");
+        var liquidRoute3 = CreateTestLiquidRoute("^/api/users/(?<id>\\d+)$", "user.liquid");
+
+        mockRoute1.Setup(r => r.GetRoute()).ReturnsAsync(liquidRoute1);
+        mockRoute2.Setup(r => r.GetRoute()).ReturnsAsync(liquidRoute2);
+        mockRoute3.Setup(r => r.GetRoute()).ReturnsAsync(liquidRoute3);
+
+        var routes = new List<ILiquidRoute> { mockRoute1.Object, mockRoute2.Object, mockRoute3.Object };
+        _liquidRoutesMock.Setup(r => r.GetEnumerator()).Returns(routes.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterRoutes();
+
+        // Assert
+        mockRoute1.Verify(r => r.GetRoute(), Times.Once);
+        mockRoute2.Verify(r => r.GetRoute(), Times.Once);
+        mockRoute3.Verify(r => r.GetRoute(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegisterRoutes_ShouldRegisterEachRouteWithRoutesManager()
+    {
+        // Arrange
+        var mockRoute1 = new Mock<ILiquidRoute>();
+        var mockRoute2 = new Mock<ILiquidRoute>();
+
+        var liquidRoute1 = CreateTestLiquidRoute("^/test1$", "test1.liquid");
+        var liquidRoute2 = CreateTestLiquidRoute("^/test2$", "test2.liquid");
+
+        mockRoute1.Setup(r => r.GetRoute()).ReturnsAsync(liquidRoute1);
+        mockRoute2.Setup(r => r.GetRoute()).ReturnsAsync(liquidRoute2);
+
+        var routes = new List<ILiquidRoute> { mockRoute1.Object, mockRoute2.Object };
+        _liquidRoutesMock.Setup(r => r.GetEnumerator()).Returns(routes.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterRoutes();
+
+        // Assert
+        _liquidRoutesManagerMock.Verify(m => m.RegisterRoute(liquidRoute1), Times.Once);
+        _liquidRoutesManagerMock.Verify(m => m.RegisterRoute(liquidRoute2), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegisterRoutes_ShouldHandleEmptyRouteCollection()
+    {
+        // Arrange
+        var routes = new List<ILiquidRoute>();
+        _liquidRoutesMock.Setup(r => r.GetEnumerator()).Returns(routes.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterRoutes();
+
+        // Assert
+        _liquidRoutesManagerMock.Verify(m => m.RegisterRoute(It.IsAny<LiquidRoute>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RegisterRoutes_ShouldPropagateExceptionFromGetRoute()
+    {
+        // Arrange
+        var mockRoute = new Mock<ILiquidRoute>();
+        var expectedException = new InvalidOperationException("Test exception");
+        
+        mockRoute.Setup(r => r.GetRoute()).ThrowsAsync(expectedException);
+        
+        var routes = new List<ILiquidRoute> { mockRoute.Object };
+        _liquidRoutesMock.Setup(r => r.GetEnumerator()).Returns(routes.GetEnumerator());
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _liquidStartup.RegisterRoutes());
+        exception.Should().Be(expectedException);
+    }
+
+    [Fact]
+    public async Task RegisterFilters_ShouldCallGetFilterOnEachLiquidFilter()
+    {
+        // Arrange
+        var mockFilter1 = new Mock<ILiquidFilter>();
+        var mockFilter2 = new Mock<ILiquidFilter>();
+        var mockFilter3 = new Mock<ILiquidFilter>();
+
+        var filterDelegate1 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
+        var filterDelegate2 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
+        var filterDelegate3 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
+
+        mockFilter1.Setup(f => f.GetFilter()).ReturnsAsync(("uppercase", filterDelegate1));
+        mockFilter2.Setup(f => f.GetFilter()).ReturnsAsync(("lowercase", filterDelegate2));
+        mockFilter3.Setup(f => f.GetFilter()).ReturnsAsync(("trim", filterDelegate3));
+
+        var filters = new List<ILiquidFilter> { mockFilter1.Object, mockFilter2.Object, mockFilter3.Object };
+        _liquidFiltersMock.Setup(f => f.GetEnumerator()).Returns(filters.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterFilters();
+
+        // Assert
+        mockFilter1.Verify(f => f.GetFilter(), Times.Once);
+        mockFilter2.Verify(f => f.GetFilter(), Times.Once);
+        mockFilter3.Verify(f => f.GetFilter(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegisterFilters_ShouldRegisterEachFilterWithFilterManager()
+    {
+        // Arrange
+        var mockFilter1 = new Mock<ILiquidFilter>();
+        var mockFilter2 = new Mock<ILiquidFilter>();
+
+        var filterDelegate1 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
+        var filterDelegate2 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
+
+        mockFilter1.Setup(f => f.GetFilter()).ReturnsAsync(("uppercase", filterDelegate1));
+        mockFilter2.Setup(f => f.GetFilter()).ReturnsAsync(("lowercase", filterDelegate2));
+
+        var filters = new List<ILiquidFilter> { mockFilter1.Object, mockFilter2.Object };
+        _liquidFiltersMock.Setup(f => f.GetEnumerator()).Returns(filters.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterFilters();
+
+        // Assert
+        _liquidFilterManagerMock.Verify(m => m.RegisterFilter("uppercase", filterDelegate1), Times.Once);
+        _liquidFilterManagerMock.Verify(m => m.RegisterFilter("lowercase", filterDelegate2), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegisterFilters_ShouldHandleEmptyFilterCollection()
+    {
+        // Arrange
+        var filters = new List<ILiquidFilter>();
+        _liquidFiltersMock.Setup(f => f.GetEnumerator()).Returns(filters.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterFilters();
+
+        // Assert
+        _liquidFilterManagerMock.Verify(m => m.RegisterFilter(It.IsAny<string>(), It.IsAny<FilterDelegate>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RegisterFilters_ShouldPropagateExceptionFromGetFilter()
+    {
+        // Arrange
+        var mockFilter = new Mock<ILiquidFilter>();
+        var expectedException = new InvalidOperationException("Filter exception");
+        
+        mockFilter.Setup(f => f.GetFilter()).ThrowsAsync(expectedException);
+        
+        var filters = new List<ILiquidFilter> { mockFilter.Object };
+        _liquidFiltersMock.Setup(f => f.GetEnumerator()).Returns(filters.GetEnumerator());
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _liquidStartup.RegisterFilters());
+        exception.Should().Be(expectedException);
+    }
+
+    [Fact]
+    public async Task RegisterRoutes_ShouldProcessRoutesSequentially()
+    {
+        // Arrange
+        var callOrder = new List<string>();
+        var mockRoute1 = new Mock<ILiquidRoute>();
+        var mockRoute2 = new Mock<ILiquidRoute>();
+
+        var liquidRoute1 = CreateTestLiquidRoute("^/test1$", "test1.liquid");
+        var liquidRoute2 = CreateTestLiquidRoute("^/test2$", "test2.liquid");
+
+        mockRoute1.Setup(r => r.GetRoute())
+            .Callback(() => callOrder.Add("route1"))
+            .ReturnsAsync(liquidRoute1);
+        mockRoute2.Setup(r => r.GetRoute())
+            .Callback(() => callOrder.Add("route2"))
+            .ReturnsAsync(liquidRoute2);
+
+        _liquidRoutesManagerMock.Setup(m => m.RegisterRoute(liquidRoute1))
+            .Callback(() => callOrder.Add("register1"));
+        _liquidRoutesManagerMock.Setup(m => m.RegisterRoute(liquidRoute2))
+            .Callback(() => callOrder.Add("register2"));
+
+        var routes = new List<ILiquidRoute> { mockRoute1.Object, mockRoute2.Object };
+        _liquidRoutesMock.Setup(r => r.GetEnumerator()).Returns(routes.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterRoutes();
+
+        // Assert
+        callOrder.Should().Equal("route1", "register1", "route2", "register2");
+    }
+
+    [Fact]
+    public async Task RegisterFilters_ShouldProcessFiltersSequentially()
+    {
+        // Arrange
+        var callOrder = new List<string>();
+        var mockFilter1 = new Mock<ILiquidFilter>();
+        var mockFilter2 = new Mock<ILiquidFilter>();
+
+        var filterDelegate1 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
+        var filterDelegate2 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
+
+        mockFilter1.Setup(f => f.GetFilter())
+            .Callback(() => callOrder.Add("filter1"))
+            .ReturnsAsync(("uppercase", filterDelegate1));
+        mockFilter2.Setup(f => f.GetFilter())
+            .Callback(() => callOrder.Add("filter2"))
+            .ReturnsAsync(("lowercase", filterDelegate2));
+
+        _liquidFilterManagerMock.Setup(m => m.RegisterFilter("uppercase", filterDelegate1))
+            .Callback(() => callOrder.Add("registerfilter1"));
+        _liquidFilterManagerMock.Setup(m => m.RegisterFilter("lowercase", filterDelegate2))
+            .Callback(() => callOrder.Add("registerfilter2"));
+
+        var filters = new List<ILiquidFilter> { mockFilter1.Object, mockFilter2.Object };
+        _liquidFiltersMock.Setup(f => f.GetEnumerator()).Returns(filters.GetEnumerator());
+
+        // Act
+        await _liquidStartup.RegisterFilters();
+
+        // Assert
+        callOrder.Should().Equal("filter1", "registerfilter1", "filter2", "registerfilter2");
+    }
+
+    private LiquidRoute CreateTestLiquidRoute(string pattern, string templatePath)
+    {
+        return new LiquidRoute
+        {
+            RoutePattern = new System.Text.RegularExpressions.Regex(pattern),
+            LiquidTemplatePath = templatePath,
+            FileProvider = new Microsoft.Extensions.FileProviders.NullFileProvider(),
+            Execute = async (model) => await Task.FromResult(new { Message = "Test" }),
+            QueryParams = new Dictionary<string, string>()
+        };
+    }
+
+    public void Dispose()
+    {
+        _serviceProvider?.Dispose();
+    }
+}

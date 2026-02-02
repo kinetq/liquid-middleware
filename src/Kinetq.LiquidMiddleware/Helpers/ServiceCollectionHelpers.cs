@@ -15,6 +15,7 @@ public static class ServiceCollectionHelpers
         serviceCollection.AddSingleton<IFluidParserManager, FluidParserManager>();
         serviceCollection.AddScoped<IHtmlRenderer, HtmlRenderer>();
         serviceCollection.AddScoped<ILiquidResponseMiddleware, LiquidResponseMiddleware>();
+        serviceCollection.AddScoped<ILiquidStartup, LiquidStartup>();
 
         return serviceCollection;
     }
