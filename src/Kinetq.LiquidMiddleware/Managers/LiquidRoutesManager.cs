@@ -82,12 +82,21 @@ public class LiquidRoutesManager : ILiquidRoutesManager
 
     public IFileProvider? GetFileProviderForAsset(string filePath)
     {
-        foreach(var liquidRoute in LiquidRoutes)
+        foreach (var liquidRoute in LiquidRoutes)
         {
             var fileInfo = liquidRoute.FileProvider.GetFileInfo(filePath);
             if (fileInfo.Exists)
             {
                 return liquidRoute.FileProvider;
+            }
+        }
+
+        foreach (var errorLiquidRoute in _errorRoutes.Value)
+        {
+            var fileInfo = errorLiquidRoute.Value.FileProvider.GetFileInfo(filePath);
+            if (fileInfo.Exists)
+            {
+                return errorLiquidRoute.Value.FileProvider;
             }
         }
 
