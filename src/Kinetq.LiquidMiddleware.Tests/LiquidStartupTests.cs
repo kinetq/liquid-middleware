@@ -15,6 +15,7 @@ public class LiquidStartupTests
     private readonly Mock<ILiquidRoutesManager> _liquidRoutesManagerMock;
     private readonly Mock<ILiquidFilterManager> _liquidFilterManagerMock;
     private readonly Mock<IEnumerable<ILiquidRoute>> _liquidRoutesMock;
+    private readonly Mock<IEnumerable<ILiquidErrorRoute>> _liquidErrorRoutesMock;
     private readonly Mock<IEnumerable<ILiquidFilter>> _liquidFiltersMock;
     private readonly ServiceProvider _serviceProvider;
 
@@ -23,13 +24,21 @@ public class LiquidStartupTests
         _liquidRoutesManagerMock = new Mock<ILiquidRoutesManager>();
         _liquidFilterManagerMock = new Mock<ILiquidFilterManager>();
         _liquidRoutesMock = new Mock<IEnumerable<ILiquidRoute>>();
+        _liquidErrorRoutesMock = new Mock<IEnumerable<ILiquidErrorRoute>>();
         _liquidFiltersMock = new Mock<IEnumerable<ILiquidFilter>>();
+
+        var routes = new List<ILiquidRoute> { };
+        _liquidRoutesMock.Setup(r => r.GetEnumerator()).Returns(routes.GetEnumerator());
+
+        var errorRoutes = new List<ILiquidErrorRoute> { };
+        _liquidErrorRoutesMock.Setup(r => r.GetEnumerator()).Returns(errorRoutes.GetEnumerator());
 
         var serviceCollection = new ServiceCollection();
         _serviceProvider = serviceCollection
             .AddSingleton(_liquidRoutesManagerMock.Object)
             .AddSingleton(_liquidFilterManagerMock.Object)
             .AddSingleton(_liquidRoutesMock.Object)
+            .AddSingleton(_liquidErrorRoutesMock.Object)
             .AddSingleton(_liquidFiltersMock.Object)
             .AddScoped<ILiquidStartup, LiquidStartup>()
             .AddLogging(builder => builder.AddConsole())
@@ -88,6 +97,33 @@ public class LiquidStartupTests
         // Assert
         _liquidRoutesManagerMock.Verify(m => m.RegisterRoute(liquidRoute1), Times.Once);
         _liquidRoutesManagerMock.Verify(m => m.RegisterRoute(liquidRoute2), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegisterRoutes_ShouldRegisterEachErrorRouteWithRoutesManager()
+    {
+        // Arrange
+        var mockRoute1 = new Mock<ILiquidErrorRoute>();
+        var mockRoute2 = new Mock<ILiquidErrorRoute>();
+
+        var liquidRoute1 = CreateTestErrorLiquidRoute("test1.liquid");
+        var liquidRoute2 = CreateTestErrorLiquidRoute("test2.liquid");
+
+        mockRoute1.Setup(r => r.GetRoute()).ReturnsAsync(liquidRoute1);
+        mockRoute1.Setup(r => r.StatusCode).Returns(404);
+        mockRoute2.Setup(r => r.GetRoute()).ReturnsAsync(liquidRoute2);
+        mockRoute2.Setup(r => r.StatusCode).Returns(500);
+        
+        var errorRoutes = new List<ILiquidErrorRoute> { mockRoute1.Object, mockRoute2.Object };
+        _liquidErrorRoutesMock.Setup(r => r.GetEnumerator()).Returns(errorRoutes.GetEnumerator());
+
+
+        // Act
+        await _liquidStartup.RegisterRoutes();
+
+        // Assert
+        _liquidRoutesManagerMock.Verify(m => m.RegisterErrorRoute(It.IsAny<int>(), liquidRoute1), Times.Once);
+        _liquidRoutesManagerMock.Verify(m => m.RegisterErrorRoute(It.IsAny<int>(), liquidRoute2), Times.Once);
     }
 
     [Fact]
@@ -278,6 +314,16 @@ public class LiquidStartupTests
             LiquidTemplatePath = templatePath,
             FileProvider = new Microsoft.Extensions.FileProviders.NullFileProvider(),
             Execute = async (model) => await Task.FromResult(new { Message = "Test" }),
+            QueryParams = new Dictionary<string, string>()
+        };
+    }
+
+    private LiquidRoute CreateTestErrorLiquidRoute(string templatePath)
+    {
+        return new LiquidRoute
+        {
+            LiquidTemplatePath = templatePath,
+            FileProvider = new Microsoft.Extensions.FileProviders.NullFileProvider(),
             QueryParams = new Dictionary<string, string>()
         };
     }
