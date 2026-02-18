@@ -163,6 +163,51 @@ namespace Kinetq.LiquidMiddleware.Tests
         [InlineData("/assets/image.png")]
         [InlineData("/assets/image.jpeg")]
         [InlineData("/scripts/site.js.map")]
+        public async Task GetHomePageAsync_ShouldReturnAssetFile_WhenReferrerSet_WhenRouteNotExists(string assetPath)
+        {
+            // Arrange
+            const string expectedRoute = "/";
+
+            _liquidRoutesManagerMock
+                .Setup(x => x.GetRouteForPath(expectedRoute, It.IsAny<IDictionary<string, string>>()))
+                .Returns((LiquidRoute)null);
+
+            _htmlRendererMock
+                .Setup(x => x.RenderHtml(It.IsAny<RenderModel>(), It.IsAny<LiquidRoute>()))
+                .ReturnsAsync((string)null);
+
+            _liquidRoutesManagerMock
+                .Setup(x => x.GetFileProviderForAsset(It.IsAny<string>()))
+                .Returns(_embeddedFileProvider);
+
+
+            var (content, contentType, statusCode) = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
+            {
+                Route = $"{assetPath.Substring(1, assetPath.Length - 1)}",
+                QueryParams = new Dictionary<string, string>(),
+                Headers = new NameValueCollection()
+                {
+                    {"Referer", "http://localhost/"}
+                }
+            });
+
+            // Load expected CSS content from embedded file
+            var fileInfo = _embeddedFileProvider.GetFileInfo(assetPath);
+            var fileBytes = await fileInfo.GetFileContentsBytes();
+
+            // Assert
+            Assert.True(statusCode == (int)HttpStatusCode.OK);
+            Assert.Equal(fileBytes, content);
+        }
+
+        [Theory]
+        [InlineData("/styles/styles.css")]
+        [InlineData("/scripts/site.js")]
+        [InlineData("/assets/data.json")]
+        [InlineData("/assets/image.svg")]
+        [InlineData("/assets/image.png")]
+        [InlineData("/assets/image.jpeg")]
+        [InlineData("/scripts/site.js.map")]
         public async Task GetHomePageAsync_ShouldReturnAssetFile_WhenNoRouteExists(string assetPath)
         {
             _liquidRoutesManagerMock

@@ -69,17 +69,15 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
             try
             {
                 string referer = request.Headers["Referer"];
-                IFileProvider? assetFileProvider;
+                IFileProvider? assetFileProvider = null;
                 if (!string.IsNullOrEmpty(referer))
                 {
                     Uri refererUri = new Uri(referer);
                     LiquidRoute? referrerLiquidRoute = _liquidRoutesManager.GetRouteForPath(refererUri.AbsolutePath);
                     assetFileProvider = referrerLiquidRoute?.FileProvider;
                 }
-                else
-                {
-                    assetFileProvider = _liquidRoutesManager.GetFileProviderForAsset(request.Route);
-                }
+
+                assetFileProvider ??= _liquidRoutesManager.GetFileProviderForAsset(request.Route);
 
                 var fileInfo = assetFileProvider?.GetFileInfo(request.Route);
                 if (fileInfo is { Exists: true })
