@@ -61,17 +61,17 @@ namespace Kinetq.LiquidMiddleware.Tests
                 .ReturnsAsync(expectedRenderedHtml);
 
             // Act
-            var (content, contentType, statusCode) = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
+            var responseModel = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
             {
                 Route = expectedRoute,
                 QueryParams = new Dictionary<string, string>()
             });
 
-            var actualHtml = System.Text.Encoding.UTF8.GetString(content);
+            var actualHtml = System.Text.Encoding.UTF8.GetString(responseModel.Content);
 
             // Assert
             Assert.Equal(expectedRenderedHtml, actualHtml);
-            Assert.True(statusCode == (int)HttpStatusCode.OK);
+            Assert.True(responseModel.StatusCode == (int)HttpStatusCode.OK);
         }
 
         [Fact]
@@ -96,17 +96,17 @@ namespace Kinetq.LiquidMiddleware.Tests
                 .ReturnsAsync(expectedRenderedHtml);
 
             // Act
-            var (content, contentType, statusCode) = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
+            var responseModel = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
             {
                 Route = "/",
                 QueryParams = new Dictionary<string, string>()
             });
 
-            var actualHtml = System.Text.Encoding.UTF8.GetString(content);
+            var actualHtml = System.Text.Encoding.UTF8.GetString(responseModel.Content);
 
             // Assert
             Assert.Equal(expectedRenderedHtml, actualHtml);
-            Assert.False(statusCode == (int)HttpStatusCode.OK);
+            Assert.False(responseModel.StatusCode == (int)HttpStatusCode.OK);
         }
 
         [Theory]
@@ -136,7 +136,7 @@ namespace Kinetq.LiquidMiddleware.Tests
                 .ReturnsAsync((string)null);
 
 
-            var (content, contentType, statusCode) = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
+            var responseModel = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
             {
                 Route = $"{assetPath.Substring(1, assetPath.Length - 1)}",
                 QueryParams = new Dictionary<string, string>(),
@@ -151,8 +151,8 @@ namespace Kinetq.LiquidMiddleware.Tests
             var fileBytes = await fileInfo.GetFileContentsBytes();
 
             // Assert
-            Assert.True(statusCode == (int)HttpStatusCode.OK);
-            Assert.Equal(fileBytes, content);
+            Assert.True(responseModel.StatusCode == (int)HttpStatusCode.OK);
+            Assert.Equal(fileBytes, responseModel.Content);
         }
 
         [Theory]
@@ -181,7 +181,7 @@ namespace Kinetq.LiquidMiddleware.Tests
                 .Returns(_embeddedFileProvider);
 
 
-            var (content, contentType, statusCode) = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
+            var responseModel = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
             {
                 Route = $"{assetPath.Substring(1, assetPath.Length - 1)}",
                 QueryParams = new Dictionary<string, string>(),
@@ -196,8 +196,8 @@ namespace Kinetq.LiquidMiddleware.Tests
             var fileBytes = await fileInfo.GetFileContentsBytes();
 
             // Assert
-            Assert.True(statusCode == (int)HttpStatusCode.OK);
-            Assert.Equal(fileBytes, content);
+            Assert.True(responseModel.StatusCode == (int)HttpStatusCode.OK);
+            Assert.Equal(fileBytes, responseModel.Content);
         }
 
         [Theory]
@@ -218,7 +218,7 @@ namespace Kinetq.LiquidMiddleware.Tests
                 .Setup(x => x.RenderHtml(It.IsAny<RenderModel>(), It.IsAny<LiquidRoute>()))
                 .ReturnsAsync((string)null);
 
-            var (content, contentType, statusCode) = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
+            var responseModel = await _liquidResponseMiddleware.HandleRequestAsync(new LiquidRequestModel()
             {
                 Route = $"{assetPath.Substring(1, assetPath.Length - 1)}",
                 QueryParams = new Dictionary<string, string>(),
@@ -230,8 +230,8 @@ namespace Kinetq.LiquidMiddleware.Tests
             var fileBytes = await fileInfo.GetFileContentsBytes();
 
             // Assert
-            Assert.True(statusCode == (int)HttpStatusCode.OK);
-            Assert.Equal(fileBytes, content);
+            Assert.True(responseModel.StatusCode == (int)HttpStatusCode.OK);
+            Assert.Equal(fileBytes, responseModel.Content);
         }
     }
 }

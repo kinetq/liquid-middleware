@@ -24,7 +24,7 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
         _logger = logger;
     }
 
-    public async Task<(byte[] content, string contentType, int statusCode)> HandleRequestAsync(LiquidRequestModel request)
+    public async Task<LiquidResponseModel> HandleRequestAsync(LiquidRequestModel request)
     {
         var renderModel = new RenderModel
         {
@@ -47,11 +47,20 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
                 var errorHtmlResponse = await _htmlRenderer.RenderHtml(renderModel, errorRoute);
                 if (errorHtmlResponse != null)
                 {
-                    return (Encoding.UTF8.GetBytes(errorHtmlResponse), "text/html", 500);
+                    return new LiquidResponseModel 
+                    { 
+                        Content = Encoding.UTF8.GetBytes(errorHtmlResponse), 
+                        ContentType = "text/html", 
+                        StatusCode = (int)HttpStatusCode.InternalServerError 
+                    };
                 }
 
-                return (Encoding.UTF8.GetBytes($"<h1>500 - Internal Server Error</h1><p>{ex.Message}</p>"), "text/html",
-                    500);
+                return new LiquidResponseModel
+                {
+                    Content = Encoding.UTF8.GetBytes($"<h1>500 - Internal Server Error</h1><p>{ex.Message}</p>"),
+                    ContentType = "text/html",
+                    StatusCode = (int)HttpStatusCode.InternalServerError
+                };
             }
         }
 
@@ -59,7 +68,12 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
         var htmlResponse = await _htmlRenderer.RenderHtml(renderModel, liquidRoute);
         if (htmlResponse != null)
         {
-            return (Encoding.UTF8.GetBytes(htmlResponse), "text/html", 200);
+            return new LiquidResponseModel
+            {
+                Content = Encoding.UTF8.GetBytes(htmlResponse),
+                ContentType = "text/html",
+                StatusCode = 200
+            };
         }
 
         string extension = Path.GetExtension(request.Route);
@@ -84,7 +98,12 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
                 {
                     var fileContent = await fileInfo.GetFileContentsBytes();
                     var contentType = await fileInfo.GetFileContentType();
-                    return (fileContent, contentType, 200);
+                    return new LiquidResponseModel
+                    {
+                        Content = fileContent,
+                        ContentType = contentType,
+                        StatusCode = 200
+                    };
                 }
             }
             catch
@@ -97,9 +116,19 @@ public class LiquidResponseMiddleware : ILiquidResponseMiddleware
         var notFoundHtmlResponse = await _htmlRenderer.RenderHtml(renderModel, notFoundRoute);
         if (notFoundHtmlResponse != null)
         {
-            return (Encoding.UTF8.GetBytes(notFoundHtmlResponse), "text/html", 404);
+            return new LiquidResponseModel
+            {
+                Content = Encoding.UTF8.GetBytes(notFoundHtmlResponse),
+                ContentType = "text/html",
+                StatusCode = (int)HttpStatusCode.NotFound
+            };
         }
 
-        return ("<h1>404 - Page Not Found</h1>"u8.ToArray(), "text/html", 404);
+        return new LiquidResponseModel
+        {
+            Content = Encoding.UTF8.GetBytes("<h1>404 - Page Not Found</h1>"),
+            ContentType = "text/html",
+            StatusCode = 404
+        };
     }
 }

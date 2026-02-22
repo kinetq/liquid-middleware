@@ -14,10 +14,9 @@ public static class HttpHelpers
         return port;
     }
 
-    public static IDictionary<string, string> GetQueryParams(this HttpListenerRequest request)
+    public static IDictionary<string, string> GetQueryParams(this string queryString)
     {
         var queryParams = new Dictionary<string, string>();
-        var queryString = request.Url.Query;
 
         if (!string.IsNullOrEmpty(queryString))
         {
@@ -28,7 +27,17 @@ public static class HttpHelpers
                 var keyValue = pair.Split('=');
                 if (keyValue.Length == 2)
                 {
-                    queryParams[WebUtility.UrlDecode(keyValue[0])] = WebUtility.UrlDecode(keyValue[1]);
+                    var key = WebUtility.UrlDecode(keyValue[0]);
+                    var value = WebUtility.UrlDecode(keyValue[1]);
+
+                    if (queryParams.TryGetValue(key, out var existingValue))
+                    {
+                        queryParams[key] = $"{existingValue},{value}";
+                    }
+                    else
+                    {
+                        queryParams[key] = value;
+                    }
                 }
             }
         }

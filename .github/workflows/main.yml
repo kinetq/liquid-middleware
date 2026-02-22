@@ -34,3 +34,10 @@ jobs:
           PROJECT_FILE_PATH: src/Kinetq.LiquidMiddleware/Kinetq.LiquidMiddleware.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
           INCLUDE_SYMBOLS: true
+          
+    - name: Publish Liquid EmbedIO Module
+      uses: alirezanet/publish-nuget@v3.0.0
+      with:
+          PROJECT_FILE_PATH: src/Kinetq.LiquidMiddleware.EmbedIO/Kinetq.LiquidMiddleware.EmbedIO.csproj
+          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+          INCLUDE_SYMBOLS: true
