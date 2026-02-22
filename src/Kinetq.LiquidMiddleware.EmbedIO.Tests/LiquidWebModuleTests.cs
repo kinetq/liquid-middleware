@@ -34,7 +34,26 @@ namespace Kinetq.LiquidMiddleware.EmbedIO.Tests
 
             _webServer.WithModule(_liquidWebModule);
 
-          Task.Run(async () => _webServer.Start());
+            _ = _webServer.RunAsync();
+
+            // Wait until the server is actually listening before returning
+            using var httpClient = new HttpClient();
+            for (var i = 0; i < 50; i++)
+            {
+                try
+                {
+                    if (_webServer.State == WebServerState.Listening)
+                    {
+                        return;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    await Task.Delay(100);
+                }
+            }
+
+            throw new TimeoutException("Web server did not start in time.");
         }
 
         [Fact]
