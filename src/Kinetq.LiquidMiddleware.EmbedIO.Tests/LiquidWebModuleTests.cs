@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Kinetq.LiquidMiddleware.EmbedIO.Tests
 {
+    [Collection("Sequential")]
     public class LiquidWebModuleTests : IAsyncLifetime
     {
         private Mock<ILiquidResponseMiddleware> _mockLiquidResponseMiddleware;
