@@ -43,7 +43,7 @@ public class LiquidStartup : ILiquidStartup
         foreach (var liquidFilter in _liquidFilters)
         {
             var filter = await liquidFilter.GetFilter();
-            _liquidFilterManager.RegisterFilter(filter.Item1, filter.Item2);
+            _liquidFilterManager.RegisterFilter(filter.Name, filter.FilterDelegate);
         }
     }
 }

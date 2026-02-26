@@ -1,8 +1,8 @@
-﻿using Fluid;
+﻿using Kinetq.LiquidMiddleware.Models;
 
 namespace Kinetq.LiquidMiddleware.Interfaces;
 
 public interface ILiquidFilter
 {
-    Task<(string, FilterDelegate)> GetFilter();
+    Task<LiquidFilter> GetFilter();
 }

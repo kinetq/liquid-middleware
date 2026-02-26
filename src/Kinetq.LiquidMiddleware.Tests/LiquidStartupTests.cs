@@ -169,9 +169,9 @@ public class LiquidStartupTests
         var filterDelegate2 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
         var filterDelegate3 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
 
-        mockFilter1.Setup(f => f.GetFilter()).ReturnsAsync(("uppercase", filterDelegate1));
-        mockFilter2.Setup(f => f.GetFilter()).ReturnsAsync(("lowercase", filterDelegate2));
-        mockFilter3.Setup(f => f.GetFilter()).ReturnsAsync(("trim", filterDelegate3));
+        mockFilter1.Setup(f => f.GetFilter()).ReturnsAsync(new LiquidFilter { Name = "uppercase", FilterDelegate = filterDelegate1 });
+        mockFilter2.Setup(f => f.GetFilter()).ReturnsAsync(new LiquidFilter { Name = "lowercase", FilterDelegate = filterDelegate2 });
+        mockFilter3.Setup(f => f.GetFilter()).ReturnsAsync(new LiquidFilter { Name = "trim", FilterDelegate = filterDelegate3 });
 
         var filters = new List<ILiquidFilter> { mockFilter1.Object, mockFilter2.Object, mockFilter3.Object };
         _liquidFiltersMock.Setup(f => f.GetEnumerator()).Returns(filters.GetEnumerator());
@@ -195,8 +195,8 @@ public class LiquidStartupTests
         var filterDelegate1 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
         var filterDelegate2 = new FilterDelegate((input, args, tmpl) => new ValueTask<FluidValue>());
 
-        mockFilter1.Setup(f => f.GetFilter()).ReturnsAsync(("uppercase", filterDelegate1));
-        mockFilter2.Setup(f => f.GetFilter()).ReturnsAsync(("lowercase", filterDelegate2));
+        mockFilter1.Setup(f => f.GetFilter()).ReturnsAsync(new LiquidFilter { Name = "uppercase", FilterDelegate = filterDelegate1 });
+        mockFilter2.Setup(f => f.GetFilter()).ReturnsAsync(new LiquidFilter { Name = "lowercase", FilterDelegate = filterDelegate2 });
 
         var filters = new List<ILiquidFilter> { mockFilter1.Object, mockFilter2.Object };
         _liquidFiltersMock.Setup(f => f.GetEnumerator()).Returns(filters.GetEnumerator());
@@ -286,10 +286,10 @@ public class LiquidStartupTests
 
         mockFilter1.Setup(f => f.GetFilter())
             .Callback(() => callOrder.Add("filter1"))
-            .ReturnsAsync(("uppercase", filterDelegate1));
+            .ReturnsAsync(new LiquidFilter { Name = "uppercase", FilterDelegate = filterDelegate1 });
         mockFilter2.Setup(f => f.GetFilter())
             .Callback(() => callOrder.Add("filter2"))
-            .ReturnsAsync(("lowercase", filterDelegate2));
+            .ReturnsAsync(new LiquidFilter { Name = "lowercase", FilterDelegate = filterDelegate2 });
 
         _liquidFilterManagerMock.Setup(m => m.RegisterFilter("uppercase", filterDelegate1))
             .Callback(() => callOrder.Add("registerfilter1"));
