@@ -20,24 +20,24 @@ jobs:
         dotnet-version: '9.0.x'
           
     - name: Restore Solution
-      run: dotnet restore Kinetq.LiquidMiddleware.sln
+      run: dotnet restore Kinetq.LiquidPages.sln
       
     - name: Build Solution
-      run: dotnet build Kinetq.LiquidMiddleware.sln  
+      run: dotnet build Kinetq.LiquidPages.sln  
       
     - name: Test Solution
-      run: dotnet test Kinetq.LiquidMiddleware.sln
+      run: dotnet test Kinetq.LiquidPages.sln
       
     - name: Publish Liquid Simple Server
       uses: alirezanet/publish-nuget@v3.0.0
       with:
-          PROJECT_FILE_PATH: src/Kinetq.LiquidMiddleware/Kinetq.LiquidMiddleware.csproj
+          PROJECT_FILE_PATH: src/Kinetq.LiquidPages/Kinetq.LiquidPages.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
           INCLUDE_SYMBOLS: true
           
     - name: Publish Liquid EmbedIO Module
       uses: alirezanet/publish-nuget@v3.0.0
       with:
-          PROJECT_FILE_PATH: src/Kinetq.LiquidMiddleware.EmbedIO/Kinetq.LiquidMiddleware.EmbedIO.csproj
+          PROJECT_FILE_PATH: src/Kinetq.LiquidPages.EmbedIO/Kinetq.LiquidPages.EmbedIO.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
           INCLUDE_SYMBOLS: true
