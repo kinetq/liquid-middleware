@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Kinetq.LiquidMiddleware.EmbedIO\Kinetq.LiquidPages.EmbedIO.csproj" />
+    <ProjectReference Include="..\Kinetq.LiquidPages.EmbedIO\Kinetq.LiquidPages.EmbedIO.csproj" />
   </ItemGroup>
 
 </Project>

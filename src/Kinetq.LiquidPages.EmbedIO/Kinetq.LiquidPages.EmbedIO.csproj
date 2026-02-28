@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Kinetq.LiquidMiddleware\Kinetq.LiquidPages.csproj" />
+    <ProjectReference Include="..\Kinetq.LiquidPages\Kinetq.LiquidPages.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
